@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AHSKNUE COMMUNITY</title>
+<style>
+:root {
+--school-navy: #1A237E;
+--school-blue: #3949AB;
+--school-bg: #F0F2F5;
+--school-white: #FFFFFF;
+}
+
+body { font-family: 'Pretendard', sans-serif; margin: 0; background: var(--school-bg); color: #333; overflow-y: scroll; }
+header {
+background: var(--school-navy); height: 60px; display: flex; align-items: center;
+padding: 0 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000;
+}
+header h1 { color: white; font-size: 18px; margin: 0; font-weight: 700; cursor: pointer; }
+
+.main-container {
+display: grid; grid-template-columns: 240px 1fr; gap: 20px;
+padding: 20px; max-width: 1300px; margin: 0 auto;
+}
+
+/* 사이드바 */
+.sidebar { background: var(--school-white); border-radius: 12px; padding: 15px; height: fit-content; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.sidebar-group { margin-bottom: 20px; }
+.sidebar-group h4 { font-size: 11px; color: #999; margin: 10px 0 10px 10px; text-transform: uppercase; }
+.menu-item {
+padding: 12px 15px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;
+margin-bottom: 4px; display: flex; align-items: center; gap: 10px; color: #444; transition: 0.2s;
+white-space: nowrap; overflow: hidden;
+}
+.menu-item:hover { background: #F0F2F5; color: var(--school-navy); }
+.menu-item.active { background: var(--school-navy); color: white !important; }
+
+/* 히어로 섹션 */
+.hero-section {
+width: 100%; height: 180px; border-radius: 12px; margin-bottom: 20px; overflow: hidden; position: relative;
+background-color: #ced4da; background-size: cover; background-position: center;
+display: flex; align-items: flex-end; padding: 25px; box-sizing: border-box;
+}
+.hero-text { color: white; font-size: 22px; font-weight: 800; text-shadow: 0 2px 8px rgba(0,0,0,0.4); z-index: 2; }
+.hero-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(to top, rgba(0,0,0,0.5), transparent); z-index: 1; }
+.photo-upload-label {
+position: absolute; bottom: 15px; right: 15px; z-index: 3;
+background: rgba(0,0,0,0.5); color: white; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;
+}
+
+/* 카드 공통 */
+.card { background: var(--school-white); border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
+.section-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; color: var(--school-navy); display: flex; align-items: center; justify-content: space-between; }
+
+/* 급식 디자인 */
+.meal-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 10px; }
+.meal-box { background: #f8f9fa; padding: 12px; border-radius: 10px; border: 1px solid #eee; }
+.meal-type { font-weight: 800; color: var(--school-navy); font-size: 13px; margin-bottom: 8px; display: block; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+.meal-list { font-size: 12px; color: #555; line-height: 1.6; }
+.meal-edit-area { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.meal-edit-area input { padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; }
+
+/* 일정 레이아웃 */
+.cal-layout { display: grid; grid-template-columns: 350px 1fr; gap: 20px; }
+.mini-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+.mini-day { font-size: 12px; padding: 6px 0; border-radius: 6px; color: #666; }
+.mini-day.has-event { background: #E7F3FF; color: var(--school-blue); font-weight: bold; }
+.mini-day.important { background: var(--school-navy); color: white !important; font-weight: bold; }
+.mini-day-head { font-size: 11px; color: #adb5bd; font-weight: bold; margin-bottom: 5px; }
+.imp-summary-list { display: flex; flex-direction: column; gap: 8px; }
+.imp-summary-item { padding: 10px; background: #FFF5F5; border-left: 4px solid #E74C3C; border-radius: 6px; font-size: 13px; font-weight: 600; color: #C0392B; }
+
+/* 게시판 및 폼 */
+.grade-tabs { display: flex; background: #eee; padding: 4px; border-radius: 8px; margin-bottom: 15px; }
+.grade-tabs button { flex: 1; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 700; color: #666; }
+.grade-tabs button.active { background: white; color: var(--school-navy); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: #ddd; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+.calendar-day { background: #fff; min-height: 90px; padding: 8px; cursor: pointer; font-size: 13px; }
+.event-tag { display: block; font-size: 11px; padding: 2px 4px; border-radius: 3px; margin-top: 2px; background: #E7F3FF; color: var(--school-blue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.event-tag.important { background: #FFEBE9; color: #E74C3C; font-weight: bold; border-left: 3px solid #E74C3C; }
+
+input[type="file"] { display: none; }
+textarea, .p-title-input { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+.btn-main { background: var(--school-navy); color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 5px; }
+.btn-sub { background: #f1f3f5; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; }
+/* 관리자 배지 스타일 */
+.admin-badge { background: #FFD700; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-left: 10px; vertical-align: middle; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<header><h1 onclick="showView('home')">🎓 SMART SCHOOL COMMUNITY <span id="admin-indicator"></span></h1></header>
+
+<div class="main-container">
+<aside class="sidebar">
+<div class="sidebar-group">
+<h4>Main Menu</h4>
+<div id="m-home" class="menu-item active" onclick="showView('home')"> 대시보드</div>
+<div id="m-notice" class="menu-item" onclick="showView('notice')">📢 공지사항</div>
+<div id="m-calendar" class="menu-item" onclick="showView('calendar')"> 학사일정</div>
+<div id="m-suggest" class="menu-item" onclick="showView('suggest')">📩 건의함</div>
+</div>
+<div class="sidebar-group">
+<h4>Departments</h4>
+<div id="m-dept-general" class="menu-item" onclick="showView('dept-general')"> 총괄기획부</div>
+<div id="m-dept-discipline" class="menu-item" onclick="showView('dept-discipline')"> 선도부</div>
+<div id="m-dept-study" class="menu-item" onclick="showView('dept-study')"> 학습관리부</div>
+<div id="m-dept-sports" class="menu-item" onclick="showView('dept-sports')"> 생활체육부</div>
+</div>
+<hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+<button id="admin-btn" class="btn-sub" style="width:100%" onclick="handleAdminAuth()">🔒 관리자 로그인</button>
+</aside>
+
+<main id="main-feed"></main>
+</div>
+
+<script>
+// --- [변경됨: Firebase 실시간 데이터베이스 연동] ---
+const FB_URL = "https://smart-school-community-default-rtdb.firebaseio.com/"; // 사용자님의 파이버베이스 URL
+
+let isAdmin = false;
+const ADMIN_PW = "1234";
+
+// 데이터 상태 변수
+let notices = [];
+let schedules = [];
+let suggestions = [];
+let heroImage = "";
+let meals = { breakfast: "정보 없음", lunch: "정보 없음", dinner: "정보 없음" };
+
+// --- [추가됨: 서버에서 전체 데이터를 실시간으로 가져오는 함수] ---
+async function loadServerData() {
+    try {
+        const res = await fetch(FB_URL + ".json");
+        const data = await res.json();
+        if (data) {
+            // 게시글 분류 (공지 vs 건의함)
+            if (data.posts) {
+                const allPosts = Object.keys(data.posts).map(key => ({ id: key, ...data.posts[key] }));
+                notices = allPosts.filter(p => p.type !== 'suggest');
+                suggestions = allPosts.filter(p => p.type === 'suggest');
+            } else { notices = []; suggestions = []; }
+            
+            // 학사 일정
+            schedules = data.schedules ? Object.keys(data.schedules).map(key => ({ id: key, ...data.schedules[key] })) : [];
+            
+            // 급식 및 히어로 이미지
+            meals = data.meals || meals;
+            heroImage = data.heroImage ? data.heroImage.content : "";
+        }
+        render();
+    } catch(e) { console.error("데이터 로드 실패:", e); render(); }
+}
+
+// --- [추가됨: 서버에 데이터를 저장하는 공통 함수] ---
+async function saveToDB(path, data) {
+    try {
+        await fetch(`${FB_URL}${path}.json`, { method: 'PUT', body: JSON.stringify(data) });
+        await loadServerData();
+    } catch(e) { alert("저장 실패"); }
+}
+
+let editingPostId = null;
+const deptMap = {
+'dept-general': '총괄기획부', 'dept-discipline': '선도부',
+'dept-study': '학습관리부', 'dept-sports': '생활체육부',
+'notice': '공지사항', 'suggest': '학생 건의함'
+};
+
+let isEditingMeal = false;
+const today = new Date();
+let currentYear = today.getFullYear();
+let currentMonth = today.getMonth();
+let currentView = 'home';
+let currentGradeFilter = 'all';
+
+function handleAdminAuth() {
+if (!isAdmin) {
+const pw = prompt("관리자 비밀번호를 입력하세요:");
+if (pw === ADMIN_PW) {
+isAdmin = true;
+alert("관리자로 로그인되었습니다.");
+document.getElementById('admin-btn').innerText = "🔓 로그아웃";
+document.getElementById('admin-indicator').innerHTML = '<span class="admin-badge">ADMIN</span>';
+} else { alert("비밀번호가 틀렸습니다."); }
+} else {
+isAdmin = false;
+alert("로그아웃되었습니다.");
+document.getElementById('admin-btn').innerText = "🔒 관리자 로그인";
+document.getElementById('admin-indicator').innerHTML = "";
+}
+render();
+}
+
+function showView(view) {
+currentView = view;
+editingPostId = null;
+document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+if(document.getElementById('m-' + view)) document.getElementById('m-' + view).classList.add('active');
+render();
+}
+
+function setGradeFilter(grade) { currentGradeFilter = grade; render(); }
+
+async function changeHeroImage(input) {
+if (input.files[0]) {
+const reader = new FileReader();
+reader.onload = async (e) => {
+heroImage = e.target.result;
+await saveToDB('heroImage', { content: heroImage }); // 서버 저장
+};
+reader.readAsDataURL(input.files[0]);
+}
+}
+
+async function saveMeal() {
+meals.breakfast = document.getElementById('edit-bf').value;
+meals.lunch = document.getElementById('edit-lu').value;
+meals.dinner = document.getElementById('edit-di').value;
+isEditingMeal = false;
+await saveToDB('meals', meals); // 서버 저장
+}
+
+function startEditPost(id) {
+editingPostId = id;
+render();
+}
+
+async function saveEditPost(id, isSuggest) {
+const titleInput = document.getElementById(`edit-title-${id}`);
+const contentInput = document.getElementById(`edit-content-${id}`);
+let updatedPost = {};
+
+if (isSuggest) {
+const post = suggestions.find(s => s.id === id);
+if (post) post.content = contentInput.value;
+updatedPost = post;
+} else {
+const post = notices.find(n => n.id === id);
+if (post) {
+if(titleInput) post.title = titleInput.value;
+post.content = contentInput.value;
+}
+updatedPost = post;
+}
+editingPostId = null;
+await saveToDB(`posts/${id}`, updatedPost); // 서버 저장
+}
+
+function render() {
+const feed = document.getElementById('main-feed');
+if(!feed) return;
+feed.innerHTML = '';
+
+const getHeroHtml = (title) => {
+let heroStyle = heroImage ? `background-image: url('${heroImage}');` : ``;
+return `
+<div class="hero-section" style="${heroStyle}">
+<div class="hero-overlay"></div>
+<div class="hero-text">SMART SCHOOL<br>${title}</div>
+${isAdmin ? `<label class="photo-upload-label">📷 사진 변경<input type="file" accept="image/*" onchange="changeHeroImage(this)"></label>` : ''}
+</div>`;
+};
+
+if (currentView === 'home') {
+feed.innerHTML = getHeroHtml('커뮤니티');
+feed.innerHTML += `
+<div class="card">
+<div class="section-title">🍛 오늘의 급식
+${isAdmin ? (isEditingMeal ? `<button class="btn-sub" onclick="saveMeal()">저장</button>` : `<button class="btn-sub" onclick="isEditingMeal=true; render();">수정</button>`) : ''}
+</div>
+${isEditingMeal && isAdmin ? `
+<div class="meal-edit-area">
+<input id="edit-bf" value="${meals.breakfast}" placeholder="조식 입력">
+<input id="edit-lu" value="${meals.lunch}" placeholder="중식 입력">
+<input id="edit-di" value="${meals.dinner}" placeholder="석식 입력">
+</div>
+` : `
+<div class="meal-grid">
+<div class="meal-box"><span class="meal-type"> 조식</span><div class="meal-list">${meals.breakfast}</div></div>
+<div class="meal-box"><span class="meal-type"> 중식</span><div class="meal-list">${meals.lunch}</div></div>
+<div class="meal-box"><span class="meal-type"> 석식</span><div class="meal-list">${meals.dinner}</div></div>
+</div>
+`}
+</div>`;
+const latestNotice = notices.filter(n => n.type === 'all').slice(-1)[0];
+feed.innerHTML += `
+<div class="card">
+<div class="section-title">📢 공지 요약 <button class="btn-sub" onclick="showView('notice')">더보기</button></div>
+${latestNotice ? `<div><b>${latestNotice.title}</b><br><small style="color:#888">${latestNotice.content.substring(0, 50)}...</small></div>` : '<div style="color:#999">공지사항이 없습니다.</div>'}
+</div>`;
+let impEvents = schedules.filter(s => s.important && s.date.startsWith(`${currentYear}-${(currentMonth+1).toString().padStart(2,'0')}`));
+let calHtml = `<div class="card"><div class="section-title"> 이달의 일정 </div><div class="cal-layout"><div class="mini-cal-grid"><div class="mini-day-head">일</div><div class="mini-day-head">월</div><div class="mini-day-head">화</div><div class="mini-day-head">수</div><div class="mini-day-head">목</div><div class="mini-day-head">금</div><div class="mini-day-head">토</div>`;
+const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+for(let j=0; j<firstDay; j++) calHtml += `<div></div>`;
+for(let i=1; i<=daysInMonth; i++) {
+const ds = `${currentYear}-${(currentMonth+1).toString().padStart(2,'0')}-${i.toString().padStart(2,'0')}`;
+const hasEvent = schedules.some(s => s.date === ds);
+const isImp = schedules.some(s => s.date === ds && s.important);
+calHtml += `<div class="mini-day ${isImp ? 'important' : (hasEvent ? 'has-event' : '')}">${i}</div>`;
+}
+calHtml += `</div><div class="imp-summary-list">${impEvents.length > 0 ? impEvents.map(e => `<div class="imp-summary-item">📌 ${e.date.split('-')[2]}일: ${e.title}</div>`).join('') : '<div style="color:#999; font-size:12px;">중요 일정이 없습니다.</div>'}</div></div></div>`;
+feed.innerHTML += calHtml;
+
+} else if (currentView === 'calendar') {
+feed.innerHTML = `
+<div class="card">
+<div class="section-title"> 학사 일정 관리 ${isAdmin ? '<small>(날짜 클릭 시 추가 가능)</small>' : ''}</div>
+<div class="grade-tabs">
+<button class="${currentGradeFilter==='all'?'active':''}" onclick="setGradeFilter('all')">전체 일정</button>
+<button class="${currentGradeFilter==='1'?'active':''}" onclick="setGradeFilter('1')">1학년</button>
+<button class="${currentGradeFilter==='2'?'active':''}" onclick="setGradeFilter('2')">2학년</button>
+</div>
+<div style="display:flex; justify-content:center; align-items:center; gap:20px; margin-bottom:15px; font-weight:bold;">
+<button class="btn-sub" onclick="changeMonth(-1)">◀ 이전</button>
+<span>${currentYear}년 ${currentMonth + 1}월</span>
+<button class="btn-sub" onclick="changeMonth(1)">다음 ▶</button>
+</div>
+<div class="calendar-grid" id="cal-grid"></div>
+</div>`;
+renderCalendar();
+} else {
+const deptName = deptMap[currentView] || '게시판';
+const isSuggest = (currentView === 'suggest');
+const type = isSuggest ? 'suggest' : (currentView === 'notice' ? 'all' : currentView.split('-')[1]);
+feed.innerHTML = getHeroHtml(deptName);
+let canWrite = isSuggest || isAdmin;
+let postHtml = `
+<div class="card">
+<div class="section-title">${deptName}
+${canWrite ? `<button class="btn-sub" onclick="document.getElementById('post-form').style.display='block'">글쓰기</button>` : ''}
+</div>
+<div id="post-form" style="display:none; margin-top:15px; border-top:1px solid #eee; padding-top:15px;">
+${!isSuggest ? '<input type="text" class="p-title-input" id="p-title" placeholder="제목">' : ''}
+<textarea id="p-content" rows="4" placeholder="내용을 입력하세요..."></textarea>
+<input type="file" id="p-img" accept="image/*" style="display:block; margin-bottom:10px;">
+<button class="btn-main" id="submit-btn" onclick="handlePost('${type}')">등록하기</button>
+</div>
+</div>`;
+const list = isSuggest ? suggestions : notices.filter(n => n.type === type);
+list.slice().reverse().forEach(n => {
+const isEditing = editingPostId === n.id;
+postHtml += `
+<div class="card">
+<div class="section-title">
+${isEditing && !isSuggest ? `<input type="text" id="edit-title-${n.id}" class="p-title-input" value="${n.title}" style="margin-bottom:0; flex:1; margin-right:10px;">` : `<span>${n.title}</span>`}
+<div>
+${isAdmin ? (isEditing ? `<button class="btn-sub" onclick="saveEditPost('${n.id}', ${isSuggest})">저장</button>` : `<button class="btn-sub" onclick="startEditPost('${n.id}')">수정</button>`) : ''}
+${isAdmin ? `<button class="btn-sub" onclick="deletePost('${n.id}', ${isSuggest})">삭제</button>` : ''}
+</div>
+</div>
+<small style="color:#999">${n.date}</small>
+${isEditing ?
+`<textarea id="edit-content-${n.id}" rows="4" class="p-title-input" style="margin-top:10px;">${n.content}</textarea>` :
+`<p style="white-space:pre-wrap; margin-top:10px;">${n.content}</p>`}
+${n.img && !isEditing ? `<img src="${n.img}" style="width:100%; border-radius:10px; margin-top:10px;">` : ''}
+</div>`;
+});
+feed.innerHTML += postHtml;
+}
+}
+
+function renderCalendar() {
+const grid = document.getElementById('cal-grid');
+if(!grid) return;
+grid.innerHTML = '';
+const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+for(let j=0; j<firstDay; j++) grid.innerHTML += `<div class="calendar-day" style="background:#f9f9f9"></div>`;
+for(let i=1; i<=daysInMonth; i++) {
+const ds = `${currentYear}-${(currentMonth+1).toString().padStart(2,'0')}-${i.toString().padStart(2,'0')}`;
+let dayEvents = schedules.filter(s => {
+if(currentGradeFilter === 'all') return (s.grade === 'all' || !s.grade) && s.date === ds;
+return (s.grade === currentGradeFilter || s.grade === 'all') && s.date === ds;
+});
+grid.innerHTML += `<div class="calendar-day" onclick="${isAdmin ? `addSchedule('${ds}')` : ''}"><span style="font-weight:bold">${i}</span>${dayEvents.map(e => `<span class="event-tag ${e.important?'important':''}">${e.title}</span>`).join('')}</div>`;
+}
+}
+
+function changeMonth(d) { currentMonth += d; if(currentMonth>11){currentMonth=0;currentYear++;} else if(currentMonth<0){currentMonth=11;currentYear--;} render(); }
+
+async function addSchedule(date) {
+if(!isAdmin) return;
+const t = prompt(`${date} 일정:`); if(!t) return;
+const imp = confirm("중요 일정입니까?");
+const newSched = { grade: currentGradeFilter, date, title: t, important: imp };
+await fetch(FB_URL + "schedules.json", { method: 'POST', body: JSON.stringify(newSched) }); // 서버 저장
+await loadServerData();
+}
+
+async function handlePost(type) {
+const titleInput = document.getElementById('p-title');
+const contentInput = document.getElementById('p-content');
+const fileInput = document.getElementById('p-img');
+const submitBtn = document.getElementById('submit-btn');
+
+const title = titleInput?.value || "건의사항";
+const content = contentInput.value;
+
+if(!content) { alert("내용을 입력해주세요."); return; }
+
+submitBtn.innerText = "전송 중...";
+submitBtn.disabled = true;
+
+const process = async (imgData) => {
+    const post = { type, title, content, img: imgData, date: new Date().toLocaleDateString() };
+    try {
+        await fetch(FB_URL + "posts.json", { method: 'POST', body: JSON.stringify(post) }); // 서버 저장
+        alert("등록되었습니다!");
+        document.getElementById('post-form').style.display='none';
+        contentInput.value = '';
+        if(titleInput) titleInput.value = '';
+        await loadServerData();
+    } catch(e) { alert("전송 실패"); }
+    finally {
+        submitBtn.innerText = "등록하기";
+        submitBtn.disabled = false;
+    }
+};
+
+if(fileInput.files[0]) {
+const reader = new FileReader();
+reader.onload = () => process(reader.result);
+reader.readAsDataURL(fileInput.files[0]);
+} else {
+process("");
+}
+}
+
+async function deletePost(id, isSuggest) {
+if(!isAdmin) return;
+if(confirm("정말 삭제하시겠습니까?")) {
+    await fetch(`${FB_URL}posts/${id}.json`, { method: 'DELETE' }); // 서버에서 삭제
+    await loadServerData();
+}
+}
+
+// 시작할 때 서버 데이터 불러오기
+window.onload = loadServerData;
+</script>
+</body>
+</html>
