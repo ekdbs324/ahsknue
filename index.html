@@ -76,15 +76,23 @@ background: rgba(0,0,0,0.5); color: white; padding: 6px 12px; border-radius: 6px
 .grade-tabs button { flex: 1; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 700; color: #666; }
 .grade-tabs button.active { background: white; color: var(--school-navy); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: #ddd; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
-.calendar-day { background: #fff; min-height: 90px; padding: 8px; cursor: pointer; font-size: 13px; }
+.calendar-day { background: #fff; min-height: 90px; padding: 8px; cursor: pointer; font-size: 13px; transition: background 0.2s; position: relative; }
+.calendar-day:hover { background: #f8f9fa; }
 .event-tag { display: block; font-size: 11px; padding: 2px 4px; border-radius: 3px; margin-top: 2px; background: #E7F3FF; color: var(--school-blue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .event-tag.important { background: #FFEBE9; color: #E74C3C; font-weight: bold; border-left: 3px solid #E74C3C; }
+
+/* 모달 스타일 추가 */
+.modal-overlay { 
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+    background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 2000; 
+}
+.modal-content { background: white; padding: 25px; border-radius: 12px; width: 320px; text-align: center; }
+.modal-btns { display: flex; gap: 10px; margin-top: 20px; justify-content: center; }
 
 input[type="file"] { display: none; }
 textarea, .p-title-input { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
 .btn-main { background: var(--school-navy); color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 5px; }
 .btn-sub { background: #f1f3f5; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; }
-/* 관리자 배지 스타일 */
 .admin-badge { background: #FFD700; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-left: 10px; vertical-align: middle; font-weight: bold; }
 </style>
 </head>
@@ -115,45 +123,50 @@ textarea, .p-title-input { width: 100%; padding: 10px; margin-bottom: 8px; borde
 <main id="main-feed"></main>
 </div>
 
+<div id="schedule-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3 id="modal-title" style="margin-top:0;">일정 관리</h3>
+        <p id="modal-desc" style="color:#666; font-size:14px;"></p>
+        <div class="modal-btns">
+            <button class="btn-sub" style="background:var(--school-blue); color:white;" onclick="editCurrentSchedule()">수정</button>
+            <button class="btn-sub" style="background:#E74C3C; color:white;" onclick="deleteCurrentSchedule()">삭제</button>
+            <button class="btn-sub" onclick="closeScheduleModal()">취소</button>
+        </div>
+    </div>
+</div>
+
 <script>
-// --- [변경됨: Firebase 실시간 데이터베이스 연동] ---
-const FB_URL = "https://smart-school-community-default-rtdb.firebaseio.com/"; // 사용자님의 파이버베이스 URL
+const FB_URL = "https://smart-school-community-default-rtdb.firebaseio.com/"; 
 
 let isAdmin = false;
-const ADMIN_PW = "1234";
+const ADMIN_PW = "0324";
 
-// 데이터 상태 변수
 let notices = [];
 let schedules = [];
 let suggestions = [];
 let heroImage = "";
 let meals = { breakfast: "정보 없음", lunch: "정보 없음", dinner: "정보 없음" };
+let selectedScheduleId = null; // 선택된 일정 ID 저장
 
-// --- [추가됨: 서버에서 전체 데이터를 실시간으로 가져오는 함수] ---
 async function loadServerData() {
     try {
         const res = await fetch(FB_URL + ".json");
         const data = await res.json();
         if (data) {
-            // 게시글 분류 (공지 vs 건의함)
             if (data.posts) {
                 const allPosts = Object.keys(data.posts).map(key => ({ id: key, ...data.posts[key] }));
                 notices = allPosts.filter(p => p.type !== 'suggest');
                 suggestions = allPosts.filter(p => p.type === 'suggest');
             } else { notices = []; suggestions = []; }
             
-            // 학사 일정
             schedules = data.schedules ? Object.keys(data.schedules).map(key => ({ id: key, ...data.schedules[key] })) : [];
-            
-            // 급식 및 히어로 이미지
             meals = data.meals || meals;
             heroImage = data.heroImage ? data.heroImage.content : "";
         }
         render();
-    } catch(e) { console.error("데이터 로드 실패:", e); render(); }
+    } catch(e) { console.error("로드 실패:", e); render(); }
 }
 
-// --- [추가됨: 서버에 데이터를 저장하는 공통 함수] ---
 async function saveToDB(path, data) {
     try {
         await fetch(`${FB_URL}${path}.json`, { method: 'PUT', body: JSON.stringify(data) });
@@ -208,7 +221,7 @@ if (input.files[0]) {
 const reader = new FileReader();
 reader.onload = async (e) => {
 heroImage = e.target.result;
-await saveToDB('heroImage', { content: heroImage }); // 서버 저장
+await saveToDB('heroImage', { content: heroImage });
 };
 reader.readAsDataURL(input.files[0]);
 }
@@ -219,33 +232,7 @@ meals.breakfast = document.getElementById('edit-bf').value;
 meals.lunch = document.getElementById('edit-lu').value;
 meals.dinner = document.getElementById('edit-di').value;
 isEditingMeal = false;
-await saveToDB('meals', meals); // 서버 저장
-}
-
-function startEditPost(id) {
-editingPostId = id;
-render();
-}
-
-async function saveEditPost(id, isSuggest) {
-const titleInput = document.getElementById(`edit-title-${id}`);
-const contentInput = document.getElementById(`edit-content-${id}`);
-let updatedPost = {};
-
-if (isSuggest) {
-const post = suggestions.find(s => s.id === id);
-if (post) post.content = contentInput.value;
-updatedPost = post;
-} else {
-const post = notices.find(n => n.id === id);
-if (post) {
-if(titleInput) post.title = titleInput.value;
-post.content = contentInput.value;
-}
-updatedPost = post;
-}
-editingPostId = null;
-await saveToDB(`posts/${id}`, updatedPost); // 서버 저장
+await saveToDB('meals', meals);
 }
 
 function render() {
@@ -307,7 +294,7 @@ feed.innerHTML += calHtml;
 } else if (currentView === 'calendar') {
 feed.innerHTML = `
 <div class="card">
-<div class="section-title"> 학사 일정 관리 ${isAdmin ? '<small>(날짜 클릭 시 추가 가능)</small>' : ''}</div>
+<div class="section-title"> 학사 일정 관리 ${isAdmin ? '<small>(날짜: 추가 / 일정: 수정·삭제)</small>' : ''}</div>
 <div class="grade-tabs">
 <button class="${currentGradeFilter==='all'?'active':''}" onclick="setGradeFilter('all')">전체 일정</button>
 <button class="${currentGradeFilter==='1'?'active':''}" onclick="setGradeFilter('1')">1학년</button>
@@ -375,69 +362,132 @@ let dayEvents = schedules.filter(s => {
 if(currentGradeFilter === 'all') return (s.grade === 'all' || !s.grade) && s.date === ds;
 return (s.grade === currentGradeFilter || s.grade === 'all') && s.date === ds;
 });
-grid.innerHTML += `<div class="calendar-day" onclick="${isAdmin ? `addSchedule('${ds}')` : ''}"><span style="font-weight:bold">${i}</span>${dayEvents.map(e => `<span class="event-tag ${e.important?'important':''}">${e.title}</span>`).join('')}</div>`;
+
+let dayHtml = `<div class="calendar-day" onclick="if(event.target==this && isAdmin) addSchedule('${ds}')">
+<span style="font-weight:bold">${i}</span>`;
+dayEvents.forEach(e => {
+dayHtml += `<span class="event-tag ${e.important?'important':''}" onclick="openScheduleModal('${e.id}', event)">${e.title}</span>`;
+});
+dayHtml += `</div>`;
+grid.innerHTML += dayHtml;
 }
 }
 
 function changeMonth(d) { currentMonth += d; if(currentMonth>11){currentMonth=0;currentYear++;} else if(currentMonth<0){currentMonth=11;currentYear--;} render(); }
 
+/* 일정 모달 제어 함수 */
+function openScheduleModal(id, event) {
+    if(!isAdmin) return;
+    event.stopPropagation();
+    selectedScheduleId = id;
+    const sched = schedules.find(s => s.id === id);
+    document.getElementById('modal-desc').innerText = `"${sched.title}" 일정을 관리합니다.`;
+    document.getElementById('schedule-modal').style.display = 'flex';
+}
+
+function closeScheduleModal() {
+    document.getElementById('schedule-modal').style.display = 'none';
+    selectedScheduleId = null;
+}
+
+async function editCurrentSchedule() {
+    const sched = schedules.find(s => s.id === selectedScheduleId);
+    const newTitle = prompt("일정 내용을 수정하세요:", sched.title);
+    if(newTitle) {
+        sched.title = newTitle;
+        sched.important = confirm("중요 일정으로 표시할까요?");
+        await saveToDB(`schedules/${selectedScheduleId}`, sched);
+    }
+    closeScheduleModal();
+}
+
+async function deleteCurrentSchedule() {
+    if(confirm("이 일정을 삭제하시겠습니까?")) {
+        await fetch(`${FB_URL}schedules/${selectedScheduleId}.json`, { method: 'DELETE' });
+        await loadServerData();
+    }
+    closeScheduleModal();
+}
+
 async function addSchedule(date) {
-if(!isAdmin) return;
-const t = prompt(`${date} 일정:`); if(!t) return;
-const imp = confirm("중요 일정입니까?");
-const newSched = { grade: currentGradeFilter, date, title: t, important: imp };
-await fetch(FB_URL + "schedules.json", { method: 'POST', body: JSON.stringify(newSched) }); // 서버 저장
-await loadServerData();
+    if(!isAdmin) return;
+    const t = prompt(`${date} 일정을 입력하세요:`); if(!t) return;
+    const imp = confirm("중요 일정입니까?");
+    const newSched = { grade: currentGradeFilter, date, title: t, important: imp };
+    await fetch(FB_URL + "schedules.json", { method: 'POST', body: JSON.stringify(newSched) });
+    await loadServerData();
 }
 
 async function handlePost(type) {
-const titleInput = document.getElementById('p-title');
-const contentInput = document.getElementById('p-content');
-const fileInput = document.getElementById('p-img');
-const submitBtn = document.getElementById('submit-btn');
+    const titleInput = document.getElementById('p-title');
+    const contentInput = document.getElementById('p-content');
+    const fileInput = document.getElementById('p-img');
+    const submitBtn = document.getElementById('submit-btn');
 
-const title = titleInput?.value || "건의사항";
-const content = contentInput.value;
+    const title = titleInput?.value || "건의사항";
+    const content = contentInput.value;
 
-if(!content) { alert("내용을 입력해주세요."); return; }
+    if(!content) { alert("내용을 입력해주세요."); return; }
 
-submitBtn.innerText = "전송 중...";
-submitBtn.disabled = true;
+    submitBtn.innerText = "전송 중...";
+    submitBtn.disabled = true;
 
-const process = async (imgData) => {
-    const post = { type, title, content, img: imgData, date: new Date().toLocaleDateString() };
-    try {
-        await fetch(FB_URL + "posts.json", { method: 'POST', body: JSON.stringify(post) }); // 서버 저장
-        alert("등록되었습니다!");
-        document.getElementById('post-form').style.display='none';
-        contentInput.value = '';
-        if(titleInput) titleInput.value = '';
-        await loadServerData();
-    } catch(e) { alert("전송 실패"); }
-    finally {
-        submitBtn.innerText = "등록하기";
-        submitBtn.disabled = false;
+    const process = async (imgData) => {
+        const post = { type, title, content, img: imgData, date: new Date().toLocaleDateString() };
+        try {
+            await fetch(FB_URL + "posts.json", { method: 'POST', body: JSON.stringify(post) });
+            alert("등록되었습니다!");
+            document.getElementById('post-form').style.display='none';
+            contentInput.value = '';
+            if(titleInput) titleInput.value = '';
+            await loadServerData();
+        } catch(e) { alert("전송 실패"); }
+        finally {
+            submitBtn.innerText = "등록하기";
+            submitBtn.disabled = false;
+        }
+    };
+
+    if(fileInput.files[0]) {
+    const reader = new FileReader();
+    reader.onload = () => process(reader.result);
+    reader.readAsDataURL(fileInput.files[0]);
+    } else {
+    process("");
     }
-};
-
-if(fileInput.files[0]) {
-const reader = new FileReader();
-reader.onload = () => process(reader.result);
-reader.readAsDataURL(fileInput.files[0]);
-} else {
-process("");
-}
 }
 
 async function deletePost(id, isSuggest) {
-if(!isAdmin) return;
-if(confirm("정말 삭제하시겠습니까?")) {
-    await fetch(`${FB_URL}posts/${id}.json`, { method: 'DELETE' }); // 서버에서 삭제
-    await loadServerData();
-}
+    if(!isAdmin) return;
+    if(confirm("정말 삭제하시겠습니까?")) {
+        await fetch(`${FB_URL}posts/${id}.json`, { method: 'DELETE' });
+        await loadServerData();
+    }
 }
 
-// 시작할 때 서버 데이터 불러오기
+async function startEditPost(id) { editingPostId = id; render(); }
+
+async function saveEditPost(id, isSuggest) {
+    const titleInput = document.getElementById(`edit-title-${id}`);
+    const contentInput = document.getElementById(`edit-content-${id}`);
+    let updatedPost = {};
+
+    if (isSuggest) {
+        const post = suggestions.find(s => s.id === id);
+        if (post) post.content = contentInput.value;
+        updatedPost = post;
+    } else {
+        const post = notices.find(n => n.id === id);
+        if (post) {
+            if(titleInput) post.title = titleInput.value;
+            post.content = contentInput.value;
+        }
+        updatedPost = post;
+    }
+    editingPostId = null;
+    await saveToDB(`posts/${id}`, updatedPost);
+}
+
 window.onload = loadServerData;
 </script>
 </body>
